@@ -3,12 +3,21 @@ const CHAR_CODES = {
   Z: 90,
 };
 
-const toCell = (cell) => `<div class="cell" contenteditable>${cell}</div>`;
-const toColumn = (column) => `<div class="column">${column}</div>`;
+const toCell = (column, row) =>
+  // eslint-disable-next-line max-len
+  `<div class="cell" contenteditable data-col="${column}" data-row="${row}"></div>`;
+const toColumn = (column) => `
+  <div class="column" data-type="resizable" data-col="${column}">
+    ${column}
+    <div class="col-resize" data-resize="col"></div>
+  </div>`;
 
 const createRow = (data, info = '') => `
-  <div class="row">
-    <div class="row-info">${info}</div>
+  <div class="row" data-type="resizable" data-row="${info}">
+    <div class="row-info">
+      ${info}
+      ${info ? '<div class="row-resize" data-resize="row"></div>' : ''}
+    </div>
     <div class="row-data">${data}</div>
   </div>
 `;
@@ -30,7 +39,8 @@ export const createTable = (rowsCount = 1) => {
   for (let i = 1; i <= rowsCount; i++) {
     const cells = new Array(colsCount)
         .fill('')
-        .map(toCell)
+        .map(toChar)
+        .map((columnName) => toCell(columnName, i))
         .join('');
     rows.push(createRow(cells, i));
   }
