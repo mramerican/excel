@@ -4,8 +4,12 @@ const CHAR_CODES = {
 };
 
 const toCell = (column, row) =>
-  // eslint-disable-next-line max-len
-  `<div class="cell" contenteditable data-col="${column}" data-row="${row}"></div>`;
+  `<div 
+      class="cell" 
+      contenteditable 
+      data-col="${toChar(null, column - 1)}" 
+      data-id="${row}:${column}"
+    ></div>`;
 const toColumn = (column) => `
   <div class="column" data-type="resizable" data-col="${column}">
     ${column}
@@ -39,8 +43,7 @@ export const createTable = (rowsCount = 1) => {
   for (let i = 1; i <= rowsCount; i++) {
     const cells = new Array(colsCount)
         .fill('')
-        .map(toChar)
-        .map((columnName) => toCell(columnName, i))
+        .map((_, j) => toCell(j + 1, i))
         .join('');
     rows.push(createRow(cells, i));
   }
