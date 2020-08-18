@@ -8,6 +8,9 @@ import {
 } from '@/components/table/table.function';
 import {tableResize} from '@/components/table/table.resize';
 import {TableSelection} from '@/components/table/TableSelection';
+import * as actions from '@/redux/action';
+import {defaultStyle} from '@/components/toolbar/config';
+import {parse} from '@core/parse';
 
 export class Table extends ExcelComponent {
   constructor($root, options) {
@@ -18,9 +21,18 @@ export class Table extends ExcelComponent {
     });
   }
 
+  async resizeTable(event) {
+    try {
+      const data = await tableResize(this.$root, event);
+      this.$dispatch(actions.tableResize(data));
+    } catch (e) {
+      console.log('Resize ERROR:', e.message());
+    }
+  }
+
   onMousedown(event) {
     if (shouldResize(event)) {
-      tableResize(this.$root, event);
+      this.resizeTable(event);
     }
   }
 
@@ -58,12 +70,14 @@ export class Table extends ExcelComponent {
   }
 
   onInput(event) {
-    this.$emit('table:input', $(event.target));
+    this.updateTextInStore($(event.target).text());
   }
 
   selectCell($cell) {
     this.selection.select($cell);
     this.$emit('table:select', $cell);
+    const styles = $cell.getStyles(Object.keys(defaultStyle));
+    this.$dispatch(actions.changeStyles(styles));
   }
 
   prepare() {
@@ -75,16 +89,34 @@ export class Table extends ExcelComponent {
     this.selectCell(this.$root.find('[data-id="1:1"]'));
 
     this.$on('formula:input', text => {
-      this.selection.current.text(text);
+      this.selection.current
+          .attr('data-value', text)
+          .text(parse(text));
+      this.updateTextInStore(text);
     });
 
     this.$on('formula:enter', (event) => {
       event.preventDefault();
       this.selection.current.focus();
     });
+
+    this.$on('toolbar:applyStyle', (value) => {
+      this.selection.applyStyle(value);
+      this.$dispatch(actions.applyStyle({
+        value,
+        ids: this.selection.selectedIds,
+      }));
+    });
   }
 
   toHTML() {
-    return createTable(20);
+    return createTable(20, this.store.getState());
+  }
+
+  updateTextInStore(value) {
+    this.$dispatch(actions.changeText({
+      id: this.selection.current.id(),
+      value: value,
+    }));
   }
 }
